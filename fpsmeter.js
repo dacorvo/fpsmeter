@@ -25,14 +25,24 @@
 // We need to verify that CSS transitions are supported
 var dummy = document.createElement('dummy');
 
-var props = ["transition","webkitTransition","MozTransition","OTransition","msTransition"];
+var transEndEventNames = {
+    'WebkitTransition' : 'webkitTransitionEnd',
+    'MozTransition'    : 'transitionend',
+    'OTransition'      : 'oTransitionEnd',
+    'msTransition'     : 'MSTransitionEnd',
+    'transition'       : 'transitionend'
+};
 
-var has_transitions = false;
-for ( var i in props ) {
-    var prop = props[i];
-    has_transitions = has_transitions || (dummy.style[props[i]]!==undefined);
+var transitionPropertyName = null;
+var transitionEventName = null;
+
+for ( var prop in transEndEventNames ) {
+    if(dummy.style[prop]!==undefined){
+        transitionPropertyName = prop;
+        transitionEventName = transEndEventNames[prop];
+    }
 }
-if(!has_transitions){
+if(!transitionPropertyName){
     return;
 }
 
@@ -63,9 +73,7 @@ var self = window.FPSMeter = {
             self.ref.setAttribute("style", style);
             var bodyRef = document.getElementsByTagName("body").item(0);
             bodyRef.appendChild(self.ref);
-            self.ref.addEventListener("webkitTransitionEnd", self.iterationEnded, false);
-            self.ref.addEventListener("transitionend",self.iterationEnded, false);
-            self.ref.addEventListener("oTransitionEnd",self.iterationEnded, false);
+            self.ref.addEventListener(transitionEventName, FPSMeter.iterationEnded, false);
         }
     },
 	storePosition : function() {
@@ -86,21 +94,21 @@ var self = window.FPSMeter = {
             setTimeout(self.run,10);
         }
     },
-    startIteration : function() {
-        values = new Array();
-        if (self.ref.style.left == "0px") {
-            self.direction = 1;
-            self.ref.style.left = self.bodyWidth + "px";
-        } else {
-            self.direction = -1;
-            self.ref.style.left = "0px";
-        }	
-    },
     iterationEnded : function(evt) {
         self.curIterations++;
         clearTimeout(self.storeTimeout);
         self.storeTimeout = null;
-        var fps = self.getValidFrames();
+        var duplicates = 0;
+        var current = -1;
+        for (var i = 0; i < values.length; i++) {
+            var l = values[i];
+            if (l == current) {
+                duplicates++;
+            } else {
+                current = l;
+            }
+        }
+        var fps = values.length - duplicates;
         self.fpsValues.push(fps);
         if (!self.maxIterations || (self.curIterations < self.maxIterations)) {
             self.direction = (self.direction == 1) ? -1 : 1;
@@ -113,6 +121,16 @@ var self = window.FPSMeter = {
             }
         }
     },
+    startIteration : function() {
+        values = new Array();
+        if (self.ref.style.left == "0px") {
+            self.direction = 1;
+            self.ref.style.left = self.bodyWidth + "px";
+        } else {
+            self.direction = -1;
+            self.ref.style.left = "0px";
+        }	
+    },
     getAverageFPS : function() {
         var avgFPS = self.fpsValues[0];
         for (var i = 1; i < self.fpsValues.length; i++) {
@@ -120,19 +138,6 @@ var self = window.FPSMeter = {
         }
         avgFPS = Math.round(avgFPS/self.fpsValues.length);
         return avgFPS;
-    },
-    getValidFrames : function() {
-        var duplicates = 0;
-        var current = -1;
-        for (var i = 0; i < values.length; i++) {
-            var l = values[i];
-            if (l == current) {
-                duplicates++;
-            } else {
-                current = l;
-            }
-        }
-        return (values.length - duplicates);
     },
     stop : function() {
         clearTimeout(self.storeTimeout);
