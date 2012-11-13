@@ -37,10 +37,11 @@ if(!has_transitions){
 }
 
 var MAX_FRAMES = 60; // Maximum Number of reference frames inspected
+var values = null;
 
 var self = window.FPSMeter = {
     init : function() {
-        self.values = null;
+        values = null;
         self.curIterations = 0;
         self.nbMeasures = MAX_FRAMES;
         self.storeTimeout = 0;
@@ -71,7 +72,7 @@ var self = window.FPSMeter = {
 	    self.storeTimeout = setTimeout(self.storePosition, 1000 / self.nbMeasures);
         var l = GetFloatValueOfAttr(self.ref, 'left');
         if(l){
-            self.values.push(l);
+            values.push(l);
         }
 	},
     run : function(duration) {
@@ -86,7 +87,7 @@ var self = window.FPSMeter = {
         }
     },
     startIteration : function() {
-        self.values = new Array();
+        values = new Array();
         if (self.ref.style.left == "0px") {
             self.direction = 1;
             self.ref.style.left = self.bodyWidth + "px";
@@ -123,15 +124,15 @@ var self = window.FPSMeter = {
     getValidFrames : function() {
         var duplicates = 0;
         var current = -1;
-        for (var i = 0; i < self.values.length; i++) {
-            var l = self.values[i];
+        for (var i = 0; i < values.length; i++) {
+            var l = values[i];
             if (l == current) {
                 duplicates++;
             } else {
                 current = l;
             }
         }
-        return (self.values.length - duplicates);
+        return (values.length - duplicates);
     },
     stop : function() {
         clearTimeout(self.storeTimeout);
