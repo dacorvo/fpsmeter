@@ -62,16 +62,13 @@ var self = window.FPSMeter = {
         if (ref==null) {
             ref = document.createElement("div");
             ref.setAttribute("id", "AnimBenchRef");
-            var style = "-webkit-transition: all 1s linear;";
-            style += "-moz-transition: all 1s linear;";
-            style += "-o-transition: all 1s linear;";
-            style += "position: absolute;";
-            style += "width: 1px;";
-            style += "height: 1px;";
-            style += "left: 0px;";
-            style += "bottom: 0px;";
-            style += "background-color: transparent;";
-            ref.setAttribute("style", style);
+            ref.style['position'] = 'absolute';
+            ref.style['backgroundColor'] = 'transparent';
+            ref.style['width'] = '1px';
+            ref.style['height'] = '1px';
+            ref.style['left'] = '0px';
+            ref.style['bottom'] = '0px';
+            ref.style[transitionPropertyName] = 'all 1s linear';
             var bodyRef = document.getElementsByTagName("body").item(0);
             bodyRef.appendChild(ref);
             ref.addEventListener(transitionEventName,
