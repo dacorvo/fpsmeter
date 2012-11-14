@@ -37,7 +37,7 @@ Please refer to this blog post for an explaination of how it works: [Effectively
 
 ##Demo
 
-[Try out the demo(soon)](http://kaizouman.github.com/fpsmeter/).
+[Try out the demo](http://kaizouman.github.com/fpsmeter/).
 
 ##License
 
