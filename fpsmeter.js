@@ -49,59 +49,9 @@ if(!transitionPropertyName){
 var MAX_FRAMES = 60; // Maximum Number of reference frames inspected
 var ref = null;
 var values = null;
+var fpsValues = null;
 
 var self = window.FPSMeter = {
-    init : function() {
-        values = null;
-        self.curIterations = 0;
-        self.nbMeasures = MAX_FRAMES;
-        self.storeTimeout = 0;
-        self.fpsValues = null;
-        self.bodyWidth = GetFloatValueOfAttr(document.body,'width');
-        ref=document.getElementById("AnimBenchRef");
-        if (ref==null) {
-            ref = document.createElement("div");
-            ref.setAttribute("id", "AnimBenchRef");
-            ref.style['position'] = 'absolute';
-            ref.style['backgroundColor'] = 'transparent';
-            ref.style['width'] = '1px';
-            ref.style['height'] = '1px';
-            ref.style['left'] = '0px';
-            ref.style['bottom'] = '0px';
-            ref.style[transitionPropertyName] = 'all 1s linear';
-            var bodyRef = document.getElementsByTagName("body").item(0);
-            bodyRef.appendChild(ref);
-            ref.addEventListener(transitionEventName,
-                function (evt) {
-                    self.curIterations++;
-                    clearTimeout(self.storeTimeout);
-                    self.storeTimeout = null;
-                    var duplicates = 0;
-                    var current = -1;
-                    for (var i = 0; i < values.length; i++) {
-                        var l = values[i];
-                        if (l == current) {
-                            duplicates++;
-                        } else {
-                            current = l;
-                        }
-                    }
-                    var fps = values.length - duplicates;
-                    self.fpsValues.push(fps);
-                    if (!self.maxIterations || (self.curIterations < self.maxIterations)) {
-                        self.direction = (self.direction == 1) ? -1 : 1;
-                        self.startIteration();
-                        self.storePosition();
-                    }
-                    if(self.storeTimeout){
-                        if(self.progress) {
-                            self.progress(fps);
-                        }
-                    }
-                },
-                false);
-        }
-    },
 	storePosition : function() {
 	    self.storeTimeout = setTimeout(self.storePosition, 1000 / self.nbMeasures);
         var l = GetFloatValueOfAttr(ref, 'left');
@@ -110,14 +60,68 @@ var self = window.FPSMeter = {
         }
 	},
     run : function(duration) {
-        if(ref) {
+        if(document.readyState === 'complete') {
+            if(!ref) {
+                self.curIterations = 0;
+                self.nbMeasures = MAX_FRAMES;
+                self.storeTimeout = 0;
+                self.bodyWidth = GetFloatValueOfAttr(document.body,'width');
+                ref = document.createElement("div");
+                ref.setAttribute("id", "AnimBenchRef");
+                ref.style['position'] = 'absolute';
+                ref.style['backgroundColor'] = 'transparent';
+                ref.style['width'] = '1px';
+                ref.style['height'] = '1px';
+                ref.style['left'] = '0px';
+                ref.style['bottom'] = '0px';
+                ref.style[transitionPropertyName] = 'all 1s linear';
+                var bodyRef = document.getElementsByTagName("body").item(0);
+                bodyRef.appendChild(ref);
+                ref.addEventListener(transitionEventName,
+                    function (evt) {
+                        self.curIterations++;
+                        clearTimeout(self.storeTimeout);
+                        self.storeTimeout = null;
+                        var duplicates = 0;
+                        var current = -1;
+                        for (var i = 0; i < values.length; i++) {
+                            var l = values[i];
+                            if (l == current) {
+                                duplicates++;
+                            } else {
+                                current = l;
+                            }
+                        }
+                        var fps = values.length - duplicates;
+                        fpsValues.push(fps);
+                        if (!self.maxIterations || (self.curIterations < self.maxIterations)) {
+                            self.direction = (self.direction == 1) ? -1 : 1;
+                            self.startIteration();
+                            self.storePosition();
+                        }
+                        if(self.storeTimeout){
+                            if(self.progress) {
+                                self.progress(fps);
+                            }
+                        }
+                    },
+                    false);
+            }
             self.maxIterations = duration?duration:null;
             self.curIterations = 0;
-            self.fpsValues = new Array();
-            self.startIteration();
+            fpsValues = new Array();
+            setTimeout(
+                function (evt) {
+                    self.startIteration();
+                },
+                10);
             self.storePosition();
         } else {
-            setTimeout(self.run,10);
+            setTimeout(
+                function (evt) {
+                    self.run(duration);
+                },
+                10);
         }
     },
     startIteration : function() {
@@ -131,11 +135,11 @@ var self = window.FPSMeter = {
         }	
     },
     getAverageFPS : function() {
-        var avgFPS = self.fpsValues[0];
-        for (var i = 1; i < self.fpsValues.length; i++) {
-            avgFPS += self.fpsValues[i];
+        var avgFPS = fpsValues[0];
+        for (var i = 1; i < fpsValues.length; i++) {
+            avgFPS += fpsValues[i];
         }
-        avgFPS = Math.round(avgFPS/self.fpsValues.length);
+        avgFPS = Math.round(avgFPS/fpsValues.length);
         return avgFPS;
     },
     stop : function() {
@@ -177,7 +181,5 @@ function GetFloatValueOfAttr (element,attr) {
     }
     return floatValue;
 }
-
-document.addEventListener('DOMContentLoaded', FPSMeter.init, false);
 
 })();
