@@ -50,17 +50,30 @@ var MAX_FRAMES = 60; // Maximum Number of reference frames inspected
 var ref = null;
 var values = null;
 var fpsValues = null;
+var storeInterval = null;
 
 var self = window.FPSMeter = {
-	storePosition : function() {
-	    self.storeTimeout = setTimeout(self.storePosition, 1000 / self.nbMeasures);
-        var l = GetFloatValueOfAttr(ref, 'left');
-        if(l){
-            values.push(l);
-        }
-	},
     run : function(duration) {
         if(document.readyState === 'complete') {
+            var startIteration = function() {
+                values = new Array();
+                if (ref.style.left == "0px") {
+                    self.direction = 1;
+                    ref.style.left = self.bodyWidth + "px";
+                } else {
+                    self.direction = -1;
+                    ref.style.left = "0px";
+                }
+                storeInterval = setInterval(
+                    function() {
+                        var l = GetFloatValueOfAttr(ref, 'left');
+                        if(l){
+                            values.push(l);
+                        }
+                    },
+                    1000 / self.nbMeasures
+                    );
+            };
             if(!ref) {
                 self.curIterations = 0;
                 self.nbMeasures = MAX_FRAMES;
@@ -80,7 +93,7 @@ var self = window.FPSMeter = {
                 ref.addEventListener(transitionEventName,
                     function (evt) {
                         self.curIterations++;
-                        clearTimeout(self.storeTimeout);
+                        clearInterval(storeInterval);
                         self.storeTimeout = null;
                         var duplicates = 0;
                         var current = -1;
@@ -96,10 +109,9 @@ var self = window.FPSMeter = {
                         fpsValues.push(fps);
                         if (!self.maxIterations || (self.curIterations < self.maxIterations)) {
                             self.direction = (self.direction == 1) ? -1 : 1;
-                            self.startIteration();
-                            self.storePosition();
+                            startIteration();
                         }
-                        if(self.storeTimeout){
+                        if (storeInterval) {
                             if(self.progress) {
                                 self.progress(fps);
                             }
@@ -112,10 +124,9 @@ var self = window.FPSMeter = {
             fpsValues = new Array();
             setTimeout(
                 function (evt) {
-                    self.startIteration();
+                    startIteration();
                 },
                 10);
-            self.storePosition();
         } else {
             setTimeout(
                 function (evt) {
@@ -123,16 +134,6 @@ var self = window.FPSMeter = {
                 },
                 10);
         }
-    },
-    startIteration : function() {
-        values = new Array();
-        if (ref.style.left == "0px") {
-            self.direction = 1;
-            ref.style.left = self.bodyWidth + "px";
-        } else {
-            self.direction = -1;
-            ref.style.left = "0px";
-        }	
     },
     getAverageFPS : function() {
         var avgFPS = fpsValues[0];
@@ -143,8 +144,8 @@ var self = window.FPSMeter = {
         return avgFPS;
     },
     stop : function() {
-        clearTimeout(self.storeTimeout);
-        self.storeTimeout = null;
+        clearInterval(storeInterval);
+        storeInterval = null;
         self.maxIterations = 1;
     },
     registerProgress : function (cb) {
