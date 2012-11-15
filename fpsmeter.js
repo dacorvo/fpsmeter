@@ -57,10 +57,8 @@ var self = window.FPSMeter = {
             var startIteration = function() {
                 values = new Array();
                 if (ref.style.left == "0px") {
-                    self.direction = 1;
                     ref.style.left = self.bodyWidth + "px";
                 } else {
-                    self.direction = -1;
                     ref.style.left = "0px";
                 }
                 storeInterval = setInterval(
@@ -106,7 +104,6 @@ var self = window.FPSMeter = {
                         }
                         var fps = values.length - duplicates;
                         if (!self.maxIterations || (self.curIterations < self.maxIterations)) {
-                            self.direction = (self.direction == 1) ? -1 : 1;
                             startIteration();
                         }
                         if (storeInterval) {
