@@ -17,10 +17,11 @@ Please refer to this blog post for an explaination of how it works: [Effectively
     var results = document.getElementById("results");
     
     // Register a progress call-back
-    FPSMeter.registerProgress(
-        function(fps) {
-            results.innerHTML = "Current framerate: " + fps + " fps";
-        });
+    document.addEventListener('fps',
+        function(evt) {
+            results.innerHTML = "Current framerate: " + evt.fps + " fps";
+        },
+        false);
     
     // Start FPS analysis
     FPSMeter.run();
@@ -28,10 +29,8 @@ Please refer to this blog post for an explaination of how it works: [Effectively
     // Do your stuff here
     ....
     
-    // Stop FPS analysis and get the average FPS
+    // Stop FPS analysis
     FPSMeter.stop();
-    var avgfps = FPSMeter.getAverageFPS();
-    results.innerHTML = "Average framerate: "+ avgfps + " fps";
     
     </script>
 
