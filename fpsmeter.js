@@ -49,7 +49,6 @@ if(!transitionPropertyName){
 var MAX_FRAMES = 60; // Maximum Number of reference frames inspected
 var ref = null;
 var values = null;
-var fpsValues = null;
 var storeInterval = null;
 
 var self = window.FPSMeter = {
@@ -106,22 +105,21 @@ var self = window.FPSMeter = {
                             }
                         }
                         var fps = values.length - duplicates;
-                        fpsValues.push(fps);
                         if (!self.maxIterations || (self.curIterations < self.maxIterations)) {
                             self.direction = (self.direction == 1) ? -1 : 1;
                             startIteration();
                         }
                         if (storeInterval) {
-                            if(self.progress) {
-                                self.progress(fps);
-                            }
+                            var evt = document.createEvent("Event");
+                            evt.initEvent("fps",true,true); 
+                            evt.fps = fps;
+                            document.dispatchEvent(evt);
                         }
                     },
                     false);
             }
             self.maxIterations = duration?duration:null;
             self.curIterations = 0;
-            fpsValues = new Array();
             setTimeout(
                 function (evt) {
                     startIteration();
@@ -135,21 +133,10 @@ var self = window.FPSMeter = {
                 10);
         }
     },
-    getAverageFPS : function() {
-        var avgFPS = fpsValues[0];
-        for (var i = 1; i < fpsValues.length; i++) {
-            avgFPS += fpsValues[i];
-        }
-        avgFPS = Math.round(avgFPS/fpsValues.length);
-        return avgFPS;
-    },
     stop : function() {
         clearInterval(storeInterval);
         storeInterval = null;
         self.maxIterations = 1;
-    },
-    registerProgress : function (cb) {
-        self.progress = cb;
     }
 }
 
