@@ -63,23 +63,33 @@
         div.className = "movingDiv";
         document.getElementById("container").appendChild(div);
       }
-
+    
+    var fps = null;
+    
     function coloredFramesTest(n) {
+        fps = new Array();
+        var averageArray = function(arr) {
+            var avg = arr[0];
+            for (var i = 1; i < arr.length; i++) {
+                avg += arr[i];
+            }
+            avg = Math.round(avg/arr.length);
+            return avg;
+        }        
         setTimeout(
             function(){
                 stopAnimation();
-                FPSMeter.stop();
-                var avgfps = FPSMeter.getAverageFPS();
+                var avgfps = averageArray(fps);
                 if ((avgfps>=50)){
                     coloredFramesTest(n+1);
                 }else{
+                    FPSMeter.stop();
                     document.getElementById("results").innerHTML = "Maximum number of frames animated @50fps : " + (n-1)*5;
                     document.getElementById("status").innerHTML = "Reload the page to restart the test";
                 }
             },5000);
         document.getElementById("results").innerHTML = "Current number of frames: " + n*5;
         startAnimation(n);
-        FPSMeter.run();
     }
     </script>
   </head>
@@ -105,10 +115,13 @@
         if(!window.FPSMeter){
             document.getElementById("results").innerHTML = "Your browser doesn't seem to be compatible with this test."; 
         }else{
-            FPSMeter.registerProgress(
-                function(fps) {
-                    document.getElementById("status").innerHTML = "Current framerate: " + fps + " fps";
-                });
+            document.addEventListener("fps",
+                function(evt) {
+                    document.getElementById("status").innerHTML = "Current framerate: " + evt.fps + " fps";
+                    fps.push(evt.fps);
+                },
+                false);
+            FPSMeter.run();
             coloredFramesTest(1);
         }
     </script>
