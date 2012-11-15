@@ -1,4 +1,4 @@
-// Copyright (c) 2011 David Corvoysier http://www.kaizou.org
+// Copyright (c) 2012 David Corvoysier http://www.kaizou.org
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -25,121 +25,116 @@
 // We need to verify that CSS transitions are supported
 var dummy = document.createElement('dummy');
 
-var props = ["transition","webkitTransition","MozTransition","OTransition","msTransition"];
+var transEndEventNames = {
+    'WebkitTransition' : 'webkitTransitionEnd',
+    'MozTransition'    : 'transitionend',
+    'OTransition'      : 'oTransitionEnd',
+    'msTransition'     : 'MSTransitionEnd',
+    'transition'       : 'transitionend'
+};
 
-var has_transitions = false;
-for ( var i in props ) {
-    var prop = props[i];
-    has_transitions = has_transitions || (dummy.style[props[i]]!==undefined);
+var transitionPropertyName = null;
+var transitionEventName = null;
+
+for ( var prop in transEndEventNames ) {
+    if(dummy.style[prop]!==undefined){
+        transitionPropertyName = prop;
+        transitionEventName = transEndEventNames[prop];
+    }
 }
-if(!has_transitions){
+if(!transitionPropertyName){
     return;
 }
 
 var MAX_FRAMES = 60; // Maximum Number of reference frames inspected
 
+var ref = null;
+var values = null;
+var storeInterval = null;
+
 var self = window.FPSMeter = {
-    init : function() {
-        self.values = null;
-        self.curIterations = 0;
-        self.nbMeasures = MAX_FRAMES;
-        self.storeTimeout = 0;
-        self.fpsValues = null;
-        self.bodyWidth = GetFloatValueOfAttr(document.body,'width');
-        self.ref=document.getElementById("AnimBenchRef");
-        if (self.ref==null) {
-            self.ref = document.createElement("div");
-            self.ref.setAttribute("id", "AnimBenchRef");
-            var style = "-webkit-transition: all 1s linear;";
-            style += "-moz-transition: all 1s linear;";
-            style += "-o-transition: all 1s linear;";
-            style += "position: absolute;";
-            style += "width: 1px;";
-            style += "height: 1px;";
-            style += "left: 0px;";
-            style += "bottom: 0px;";
-            style += "background-color: transparent;";
-            self.ref.setAttribute("style", style);
-            var bodyRef = document.getElementsByTagName("body").item(0);
-            bodyRef.appendChild(self.ref);
-            self.ref.addEventListener("webkitTransitionEnd", self.iterationEnded, false);
-            self.ref.addEventListener("transitionend",self.iterationEnded, false);
-            self.ref.addEventListener("oTransitionEnd",self.iterationEnded, false);
-        }
-    },
-	storePosition : function() {
-	    self.storeTimeout = setTimeout(self.storePosition, 1000 / self.nbMeasures);
-        var l = GetFloatValueOfAttr(self.ref, 'left');
-        if(l){
-            self.values.push(l);
-        }
-	},
     run : function(duration) {
-        if(self.ref) {
+        if(document.readyState === 'complete') {
+            var startIteration = function() {
+                values = new Array();
+                if (ref.style.left == "0px") {
+                    ref.style.left = self.bodyWidth + "px";
+                } else {
+                    ref.style.left = "0px";
+                }
+                storeInterval = setInterval(
+                    function() {
+                        var l = GetFloatValueOfAttr(ref, 'left');
+                        if(l){
+                            values.push(l);
+                        }
+                    },
+                    1000 / self.nbMeasures
+                    );
+            };
+            if(!ref) {
+                self.curIterations = 0;
+                self.nbMeasures = MAX_FRAMES;
+                self.storeTimeout = 0;
+                self.bodyWidth = GetFloatValueOfAttr(document.body,'width');
+                ref = document.createElement("div");
+                ref.setAttribute("id", "AnimBenchRef");
+                ref.style['position'] = 'absolute';
+                ref.style['backgroundColor'] = 'transparent';
+                ref.style['width'] = '1px';
+                ref.style['height'] = '1px';
+                ref.style['left'] = '0px';
+                ref.style['bottom'] = '0px';
+                ref.style[transitionPropertyName] = 'all 1s linear';
+                var bodyRef = document.getElementsByTagName("body").item(0);
+                bodyRef.appendChild(ref);
+                ref.addEventListener(transitionEventName,
+                    function (evt) {
+                        self.curIterations++;
+                        clearInterval(storeInterval);
+                        self.storeTimeout = null;
+                        var duplicates = 0;
+                        var current = -1;
+                        for (var i = 0; i < values.length; i++) {
+                            var l = values[i];
+                            if (l == current) {
+                                duplicates++;
+                            } else {
+                                current = l;
+                            }
+                        }
+                        var fps = values.length - duplicates;
+                        if (!self.maxIterations || (self.curIterations < self.maxIterations)) {
+                            startIteration();
+                        }
+                        if (storeInterval) {
+                            var evt = document.createEvent("Event");
+                            evt.initEvent("fps",true,true); 
+                            evt.fps = fps;
+                            document.dispatchEvent(evt);
+                        }
+                    },
+                    false);
+            }
             self.maxIterations = duration?duration:null;
             self.curIterations = 0;
-            self.fpsValues = new Array();
-            self.startIteration();
-            self.storePosition();
+            setTimeout(
+                function (evt) {
+                    startIteration();
+                },
+                10);
         } else {
-            setTimeout(self.run,10);
+            setTimeout(
+                function (evt) {
+                    self.run(duration);
+                },
+                10);
         }
-    },
-    startIteration : function() {
-        self.values = new Array();
-        if (self.ref.style.left == "0px") {
-            self.direction = 1;
-            self.ref.style.left = self.bodyWidth + "px";
-        } else {
-            self.direction = -1;
-            self.ref.style.left = "0px";
-        }	
-    },
-    iterationEnded : function(evt) {
-        self.curIterations++;
-        clearTimeout(self.storeTimeout);
-        self.storeTimeout = null;
-        var fps = self.getValidFrames();
-        self.fpsValues.push(fps);
-        if (!self.maxIterations || (self.curIterations < self.maxIterations)) {
-            self.direction = (self.direction == 1) ? -1 : 1;
-            self.startIteration();
-            self.storePosition();
-        }
-        if(self.storeTimeout){
-            if(self.progress) {
-                self.progress(fps);
-            }
-        }
-    },
-    getAverageFPS : function() {
-        var avgFPS = self.fpsValues[0];
-        for (var i = 1; i < self.fpsValues.length; i++) {
-            avgFPS += self.fpsValues[i];
-        }
-        avgFPS = Math.round(avgFPS/self.fpsValues.length);
-        return avgFPS;
-    },
-    getValidFrames : function() {
-        var duplicates = 0;
-        var current = -1;
-        for (var i = 0; i < self.values.length; i++) {
-            var l = self.values[i];
-            if (l == current) {
-                duplicates++;
-            } else {
-                current = l;
-            }
-        }
-        return (self.values.length - duplicates);
     },
     stop : function() {
-        clearTimeout(self.storeTimeout);
-        self.storeTimeout = null;
+        clearInterval(storeInterval);
+        storeInterval = null;
         self.maxIterations = 1;
-    },
-    registerProgress : function (cb) {
-        self.progress = cb;
     }
 }
 
@@ -172,7 +167,5 @@ function GetFloatValueOfAttr (element,attr) {
     }
     return floatValue;
 }
-
-document.addEventListener('DOMContentLoaded', FPSMeter.init, false);
 
 })();
