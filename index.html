@@ -8,23 +8,32 @@
         background: #fff;
         font-family: 'Open Sans', sans-serif;
     }
-    body > * {
+    article {
         width: 720px;
         margin-left: auto;
         margin-right: auto;
     }
-    body > header > h1 {
+    article > header > h1 {
         text-align: center;
     }
-    body > article > p {
+    article > p {
         text-align: center;
-    }
-    #results {
     }
     #container {
         position: relative;
         border: 1px solid red;
         height: 476px;
+    }
+    aside {
+        position: absolute;
+        top: 0px;
+        left: 0px;
+        margin: 0px;
+    }
+    #fps {
+        font-size: 1.5em;
+        background-color: black;
+        color: white;
     }
     .movingDiv {
         position: absolute;
@@ -85,7 +94,7 @@
                 }else{
                     FPSMeter.stop();
                     document.getElementById("results").innerHTML = "Maximum number of frames animated @50fps : " + (n-1)*5;
-                    document.getElementById("status").innerHTML = "Reload the page to restart the test";
+                    +"<br/>Reload the page to restart the test";
                 }
             },5000);
         document.getElementById("results").innerHTML = "Current number of frames: " + n*5;
@@ -94,6 +103,7 @@
     </script>
   </head>
   <body>
+    <article>
     <header>
     <h1>Simple colored frames benchmark</h1>
     <ul>
@@ -103,21 +113,21 @@
         <li>Frame size: 300x300</li>
     </ul>
     </header>
-    <article>
     <div id="container">
     </div>
     <p id="results">
     </p>
-    <p id="status">
-    </p>
     </article>
+    <aside>
+        <div id="fps"></div>
+    </aside>
     <script>
         if(!window.FPSMeter){
             document.getElementById("results").innerHTML = "Your browser doesn't seem to be compatible with this test."; 
         }else{
             document.addEventListener("fps",
                 function(evt) {
-                    document.getElementById("status").innerHTML = "Current framerate: " + evt.fps + " fps";
+                    document.getElementById("fps").innerHTML = evt.fps + " fps";
                     fps.push(evt.fps);
                 },
                 false);
