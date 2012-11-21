@@ -89,11 +89,11 @@
             function(){
                 stopAnimation();
                 var avgfps = averageArray(fps);
-                if ((avgfps>=50)){
+                if ((avgfps>=30)){
                     coloredFramesTest(n+1);
                 }else{
                     FPSMeter.stop();
-                    document.getElementById("results").innerHTML = "Maximum number of frames animated @50fps : " + (n-1)*5;
+                    document.getElementById("results").innerHTML = "Maximum number of frames animated @30fps : " + (n-1)*5;
                     +"<br/>Reload the page to restart the test";
                 }
             },5000);
@@ -108,7 +108,7 @@
     <h1>Simple colored frames benchmark</h1>
     <ul>
         <li>Test duration: 5 seconds</li>
-        <li>Target framerate: 50 fps (frames per seconds)</li>
+        <li>Target framerate: 30 fps (frames per seconds)</li>
         <li>Viewport size: 720x476</li>
         <li>Frame size: 300x300</li>
     </ul>
