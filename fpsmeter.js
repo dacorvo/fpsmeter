@@ -46,7 +46,34 @@ if(!transitionPropertyName){
     return;
 }
 
-var MAX_FRAMES = 60; // Maximum Number of reference frames inspected
+// requestAnimationFrame polyfill by Erik Möller
+// http://my.opera.com/emoller/blog/2011/12/20/requestanimationframe-for-smart-er-animating
+(function() {
+    var lastTime = 0;
+    var vendors = ['ms', 'moz', 'webkit', 'o'];
+    for(var x = 0; x < vendors.length && !window.requestAnimationFrame; ++x) {
+        window.requestAnimationFrame = window[vendors[x]+'RequestAnimationFrame'];
+        window.cancelAnimationFrame = 
+          window[vendors[x]+'CancelAnimationFrame'] || window[vendors[x]+'CancelRequestAnimationFrame'];
+    }
+ 
+    if (!window.requestAnimationFrame)
+        window.requestAnimationFrame = function(callback, element) {
+            var currTime = new Date().getTime();
+            // 16 ms is for a 60fps target
+            var timeToCall = Math.max(0, 16 - (currTime - lastTime));
+            var id = window.setTimeout(function() { callback(currTime + timeToCall); }, 
+              timeToCall);
+            lastTime = currTime + timeToCall;
+            return id;
+        };
+ 
+    if (!window.cancelAnimationFrame)
+        window.cancelAnimationFrame = function(id) {
+            clearTimeout(id);
+        };
+}());
+
 var ref = null;
 var values = null;
 var storeInterval = null;
@@ -61,19 +88,17 @@ var self = window.FPSMeter = {
                 } else {
                     ref.style.left = "0px";
                 }
-                storeInterval = setInterval(
-                    function() {
-                        var l = GetFloatValueOfAttr(ref, 'left');
-                        if(l){
-                            values.push(l);
-                        }
-                    },
-                    1000 / self.nbMeasures
-                    );
+                var storeValue = function () {
+                    storeInterval = requestAnimationFrame(storeValue);
+                    var l = GetFloatValueOfAttr(ref, 'left');
+                    if(l){
+                        values.push(l);
+                    }
+                };
+                storeValue();
             };
             if(!ref) {
                 self.curIterations = 0;
-                self.nbMeasures = MAX_FRAMES;
                 self.storeTimeout = 0;
                 self.bodyWidth = GetFloatValueOfAttr(document.body,'width');
                 ref = document.createElement("div");
@@ -131,7 +156,7 @@ var self = window.FPSMeter = {
         }
     },
     stop : function() {
-        clearInterval(storeInterval);
+        cancelAnimationFrame(storeInterval);
         storeInterval = null;
         self.maxIterations = 1;
     }
