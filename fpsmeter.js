@@ -115,7 +115,7 @@ var self = window.FPSMeter = {
                 ref.addEventListener(transitionEventName,
                     function (evt) {
                         self.curIterations++;
-                        clearInterval(storeInterval);
+                        cancelAnimationFrame(storeInterval);
                         self.storeTimeout = null;
                         var duplicates = 0;
                         var current = -1;
