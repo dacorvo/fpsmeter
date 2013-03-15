@@ -76,7 +76,7 @@ if(!transitionPropertyName){
 
 var ref = null;
 var values = null;
-var storeInterval = null;
+var frameID = null;
 
 var self = window.FPSMeter = {
     run : function(duration) {
@@ -88,14 +88,22 @@ var self = window.FPSMeter = {
                 } else {
                     ref.style.left = "0px";
                 }
-                var storeValue = function () {
-                    storeInterval = requestAnimationFrame(storeValue);
-                    var l = GetFloatValueOfAttr(ref, 'left');
-                    if(l){
-                        values.push(l);
-                    }
-                };
-                storeValue();
+                if (window.mozPaintCount) {
+                    // Remember how many paints we had
+                    frameID = window.mozPaintCount;
+                } else {
+                    // Define a function to repeatedly store reference
+                    // x positions 
+                    var storeValue = function () {
+                        frameID = requestAnimationFrame(storeValue);
+                        var l = GetFloatValueOfAttr(ref, 'left');
+                        if(l){
+                            values.push(l);
+                        }
+                    };
+                    // Start storing positions right now
+                    storeValue();
+                }
             };
             if(!ref) {
                 self.curIterations = 0;
@@ -115,23 +123,33 @@ var self = window.FPSMeter = {
                 ref.addEventListener(transitionEventName,
                     function (evt) {
                         self.curIterations++;
-                        cancelAnimationFrame(storeInterval);
-                        self.storeTimeout = null;
-                        var duplicates = 0;
-                        var current = -1;
-                        for (var i = 0; i < values.length; i++) {
-                            var l = values[i];
-                            if (l == current) {
-                                duplicates++;
-                            } else {
-                                current = l;
+                        var fps = 0;
+                        if (window.mozPaintCount) {
+                            // We just count the number of paints that
+                            // occured during the last second
+                            fps = window.mozPaintCount - frameID;
+                        } else {
+                            // We will look at reference x positions 
+                            // stored during the last second and remove 
+                            // duplicates                        
+                            cancelAnimationFrame(frameID);
+                            self.storeTimeout = null;
+                            var duplicates = 0;
+                            var current = -1;
+                            for (var i = 0; i < values.length; i++) {
+                                var l = values[i];
+                                if (l == current) {
+                                    duplicates++;
+                                } else {
+                                    current = l;
+                                }
                             }
+                            fps = values.length - duplicates;
                         }
-                        var fps = values.length - duplicates;
                         if (!self.maxIterations || (self.curIterations < self.maxIterations)) {
                             startIteration();
                         }
-                        if (storeInterval) {
+                        if (frameID) {
                             var evt = document.createEvent("Event");
                             evt.initEvent("fps",true,true); 
                             evt.fps = fps;
@@ -156,8 +174,8 @@ var self = window.FPSMeter = {
         }
     },
     stop : function() {
-        cancelAnimationFrame(storeInterval);
-        storeInterval = null;
+        cancelAnimationFrame(frameID);
+        frameID = null;
         self.maxIterations = 1;
     }
 }
