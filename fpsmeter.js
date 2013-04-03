@@ -82,13 +82,17 @@ var cancelAnimationFrame = null;
 
 var ref = null;
 var values = null;
+var startTime = null;
 var frameID = null;
 
 var self = window.FPSMeter = {
-    run : function(duration) {
+    run : function(rate,duration) {
+        self.rate = rate ? rate : 1;
         if(document.readyState === 'complete') {
             var startIteration = function() {
                 values = new Array();
+                // Remember when we started the iteration
+                startTime = new Date().getTime();
                 if (ref.style.left == "0px") {
                     ref.style.left = self.bodyWidth + "px";
                 } else {
@@ -123,20 +127,21 @@ var self = window.FPSMeter = {
                 ref.style['height'] = '1px';
                 ref.style['left'] = '0px';
                 ref.style['bottom'] = '0px';
-                ref.style[transitionPropertyName] = 'all 1s linear';
+                ref.style[transitionPropertyName] = 'all ' + self.rate + 's linear';
                 var bodyRef = document.getElementsByTagName("body").item(0);
                 bodyRef.appendChild(ref);
                 ref.addEventListener(transitionEventName,
                     function (evt) {
                         self.curIterations++;
-                        var fps = 0;
+                        var frames = 0;
+                        var elapsed = (new Date().getTime()) - startTime;
                         if (window.mozPaintCount != undefined) {
                             // We just count the number of paints that
-                            // occured during the last second
-                            fps = window.mozPaintCount - frameID;
+                            // occured during the last iteration
+                            frames = window.mozPaintCount - frameID;
                         } else {
                             // We will look at reference x positions 
-                            // stored during the last second and remove 
+                            // stored during the last iteration and remove 
                             // duplicates                        
                             cancelAnimationFrame(frameID);
                             var duplicates = 0;
@@ -149,8 +154,9 @@ var self = window.FPSMeter = {
                                     current = l;
                                 }
                             }
-                            fps = values.length - duplicates;
+                            frames = values.length - duplicates;
                         }
+                        var fps = Math.round(frames*1000/elapsed);
                         if (!self.maxIterations || (self.curIterations < self.maxIterations)) {
                             startIteration();
                         }
@@ -174,7 +180,7 @@ var self = window.FPSMeter = {
         } else {
             setTimeout(
                 function (evt) {
-                    self.run(duration);
+                    self.run(rate,duration);
                 },
                 10);
         }
