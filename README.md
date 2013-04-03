@@ -23,7 +23,8 @@ Please refer to this blog post for an explaination of how it works: [Effectively
         },
         false);
     
-    // Start FPS analysis
+    // Start FPS analysis, optionnally specifying the rate at which FPS 
+    // are evaluated (in seconds, defaults to 1).
     FPSMeter.run();
     
     // Do your stuff here
