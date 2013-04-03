@@ -46,6 +46,9 @@ if(!transitionPropertyName){
     return;
 }
 
+// Use this to remmeber what method we use to calculate fps
+var method = 'raf';
+
 var requestAnimationFrame = null;
 var cancelAnimationFrame = null;
 // requestAnimationFrame polyfill by Erik Möller
@@ -61,6 +64,7 @@ var cancelAnimationFrame = null;
  
     if (!requestAnimationFrame)
         requestAnimationFrame = function(callback, element) {
+            method = 'js';
             var currTime = new Date().getTime();
             // 16 ms is for a 60fps target
             var timeToCall = Math.max(0, 16 - (currTime - lastTime));
@@ -91,6 +95,7 @@ var self = window.FPSMeter = {
                     ref.style.left = "0px";
                 }
                 if (window.mozPaintCount != undefined) {
+                    method = 'native';
                     // Remember how many paints we had
                     frameID = window.mozPaintCount;
                 } else {
@@ -155,6 +160,7 @@ var self = window.FPSMeter = {
                             var evt = document.createEvent("Event");
                             evt.initEvent("fps",true,true); 
                             evt.fps = fps;
+                            evt.method = method;
                             document.dispatchEvent(evt);
                         }
                     },
