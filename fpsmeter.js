@@ -46,19 +46,25 @@ if(!transitionPropertyName){
     return;
 }
 
+// Use this to remmeber what method we use to calculate fps
+var method = 'raf';
+
+var requestAnimationFrame = null;
+var cancelAnimationFrame = null;
 // requestAnimationFrame polyfill by Erik Möller
 // http://my.opera.com/emoller/blog/2011/12/20/requestanimationframe-for-smart-er-animating
 (function() {
     var lastTime = 0;
     var vendors = ['ms', 'moz', 'webkit', 'o'];
-    for(var x = 0; x < vendors.length && !window.requestAnimationFrame; ++x) {
-        window.requestAnimationFrame = window[vendors[x]+'RequestAnimationFrame'];
-        window.cancelAnimationFrame = 
+    for(var x = 0; x < vendors.length && !requestAnimationFrame; ++x) {
+        requestAnimationFrame = window[vendors[x]+'RequestAnimationFrame'];
+        cancelAnimationFrame = 
           window[vendors[x]+'CancelAnimationFrame'] || window[vendors[x]+'CancelRequestAnimationFrame'];
     }
  
-    if (!window.requestAnimationFrame)
-        window.requestAnimationFrame = function(callback, element) {
+    if (!requestAnimationFrame)
+        requestAnimationFrame = function(callback, element) {
+            method = 'js';
             var currTime = new Date().getTime();
             // 16 ms is for a 60fps target
             var timeToCall = Math.max(0, 16 - (currTime - lastTime));
@@ -68,27 +74,32 @@ if(!transitionPropertyName){
             return id;
         };
  
-    if (!window.cancelAnimationFrame)
-        window.cancelAnimationFrame = function(id) {
+    if (!cancelAnimationFrame)
+        cancelAnimationFrame = function(id) {
             clearTimeout(id);
         };
 }());
 
 var ref = null;
 var values = null;
+var startTime = null;
 var frameID = null;
 
 var self = window.FPSMeter = {
-    run : function(duration) {
+    run : function(rate) {
+        self.rate = rate ? rate : 1;
         if(document.readyState === 'complete') {
             var startIteration = function() {
                 values = new Array();
+                // Remember when we started the iteration
+                startTime = new Date().getTime();
                 if (ref.style.left == "0px") {
                     ref.style.left = self.bodyWidth + "px";
                 } else {
                     ref.style.left = "0px";
                 }
-                if (window.mozPaintCount) {
+                if (window.mozPaintCount != undefined) {
+                    method = 'native';
                     // Remember how many paints we had
                     frameID = window.mozPaintCount;
                 } else {
@@ -106,8 +117,6 @@ var self = window.FPSMeter = {
                 }
             };
             if(!ref) {
-                self.curIterations = 0;
-                self.storeTimeout = 0;
                 self.bodyWidth = GetFloatValueOfAttr(document.body,'width');
                 ref = document.createElement("div");
                 ref.setAttribute("id", "AnimBenchRef");
@@ -117,23 +126,22 @@ var self = window.FPSMeter = {
                 ref.style['height'] = '1px';
                 ref.style['left'] = '0px';
                 ref.style['bottom'] = '0px';
-                ref.style[transitionPropertyName] = 'all 1s linear';
+                ref.style[transitionPropertyName] = 'all ' + self.rate + 's linear';
                 var bodyRef = document.getElementsByTagName("body").item(0);
                 bodyRef.appendChild(ref);
                 ref.addEventListener(transitionEventName,
                     function (evt) {
-                        self.curIterations++;
-                        var fps = 0;
-                        if (window.mozPaintCount) {
+                        var frames = 0;
+                        var elapsed = (new Date().getTime()) - startTime;
+                        if (window.mozPaintCount != undefined) {
                             // We just count the number of paints that
-                            // occured during the last second
-                            fps = window.mozPaintCount - frameID;
+                            // occured during the last iteration
+                            frames = window.mozPaintCount - frameID;
                         } else {
                             // We will look at reference x positions 
-                            // stored during the last second and remove 
+                            // stored during the last iteration and remove 
                             // duplicates                        
                             cancelAnimationFrame(frameID);
-                            self.storeTimeout = null;
                             var duplicates = 0;
                             var current = -1;
                             for (var i = 0; i < values.length; i++) {
@@ -144,22 +152,18 @@ var self = window.FPSMeter = {
                                     current = l;
                                 }
                             }
-                            fps = values.length - duplicates;
+                            frames = values.length - duplicates;
                         }
-                        if (!self.maxIterations || (self.curIterations < self.maxIterations)) {
-                            startIteration();
-                        }
-                        if (frameID) {
-                            var evt = document.createEvent("Event");
-                            evt.initEvent("fps",true,true); 
-                            evt.fps = fps;
-                            document.dispatchEvent(evt);
-                        }
+                        var fps = Math.round(frames*1000/elapsed);
+                        startIteration();
+                        var evt = document.createEvent("Event");
+                        evt.initEvent("fps",true,true); 
+                        evt.fps = fps;
+                        evt.method = method;
+                        document.dispatchEvent(evt);
                     },
                     false);
             }
-            self.maxIterations = duration?duration:null;
-            self.curIterations = 0;
             setTimeout(
                 function (evt) {
                     startIteration();
@@ -168,7 +172,7 @@ var self = window.FPSMeter = {
         } else {
             setTimeout(
                 function (evt) {
-                    self.run(duration);
+                    self.run(rate);
                 },
                 10);
         }
@@ -176,7 +180,9 @@ var self = window.FPSMeter = {
     stop : function() {
         cancelAnimationFrame(frameID);
         frameID = null;
-        self.maxIterations = 1;
+        var bodyRef = document.getElementsByTagName("body").item(0);
+        bodyRef.removeChild(ref);
+        ref = null;
     }
 }
 
