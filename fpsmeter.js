@@ -46,19 +46,21 @@ if(!transitionPropertyName){
     return;
 }
 
+var requestAnimationFrame = null;
+var cancelAnimationFrame = null;
 // requestAnimationFrame polyfill by Erik Möller
 // http://my.opera.com/emoller/blog/2011/12/20/requestanimationframe-for-smart-er-animating
 (function() {
     var lastTime = 0;
     var vendors = ['ms', 'moz', 'webkit', 'o'];
-    for(var x = 0; x < vendors.length && !window.requestAnimationFrame; ++x) {
-        window.requestAnimationFrame = window[vendors[x]+'RequestAnimationFrame'];
-        window.cancelAnimationFrame = 
+    for(var x = 0; x < vendors.length && !requestAnimationFrame; ++x) {
+        requestAnimationFrame = window[vendors[x]+'RequestAnimationFrame'];
+        cancelAnimationFrame = 
           window[vendors[x]+'CancelAnimationFrame'] || window[vendors[x]+'CancelRequestAnimationFrame'];
     }
  
-    if (!window.requestAnimationFrame)
-        window.requestAnimationFrame = function(callback, element) {
+    if (!requestAnimationFrame)
+        requestAnimationFrame = function(callback, element) {
             var currTime = new Date().getTime();
             // 16 ms is for a 60fps target
             var timeToCall = Math.max(0, 16 - (currTime - lastTime));
@@ -68,8 +70,8 @@ if(!transitionPropertyName){
             return id;
         };
  
-    if (!window.cancelAnimationFrame)
-        window.cancelAnimationFrame = function(id) {
+    if (!cancelAnimationFrame)
+        cancelAnimationFrame = function(id) {
             clearTimeout(id);
         };
 }());
