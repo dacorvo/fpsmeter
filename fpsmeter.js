@@ -114,7 +114,6 @@ var self = window.FPSMeter = {
             };
             if(!ref) {
                 self.curIterations = 0;
-                self.storeTimeout = 0;
                 self.bodyWidth = GetFloatValueOfAttr(document.body,'width');
                 ref = document.createElement("div");
                 ref.setAttribute("id", "AnimBenchRef");
@@ -140,7 +139,6 @@ var self = window.FPSMeter = {
                             // stored during the last second and remove 
                             // duplicates                        
                             cancelAnimationFrame(frameID);
-                            self.storeTimeout = null;
                             var duplicates = 0;
                             var current = -1;
                             for (var i = 0; i < values.length; i++) {
