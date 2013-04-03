@@ -86,7 +86,7 @@ var startTime = null;
 var frameID = null;
 
 var self = window.FPSMeter = {
-    run : function(rate,duration) {
+    run : function(rate) {
         self.rate = rate ? rate : 1;
         if(document.readyState === 'complete') {
             var startIteration = function() {
@@ -117,7 +117,6 @@ var self = window.FPSMeter = {
                 }
             };
             if(!ref) {
-                self.curIterations = 0;
                 self.bodyWidth = GetFloatValueOfAttr(document.body,'width');
                 ref = document.createElement("div");
                 ref.setAttribute("id", "AnimBenchRef");
@@ -132,7 +131,6 @@ var self = window.FPSMeter = {
                 bodyRef.appendChild(ref);
                 ref.addEventListener(transitionEventName,
                     function (evt) {
-                        self.curIterations++;
                         var frames = 0;
                         var elapsed = (new Date().getTime()) - startTime;
                         if (window.mozPaintCount != undefined) {
@@ -157,21 +155,15 @@ var self = window.FPSMeter = {
                             frames = values.length - duplicates;
                         }
                         var fps = Math.round(frames*1000/elapsed);
-                        if (!self.maxIterations || (self.curIterations < self.maxIterations)) {
-                            startIteration();
-                        }
-                        if (frameID) {
-                            var evt = document.createEvent("Event");
-                            evt.initEvent("fps",true,true); 
-                            evt.fps = fps;
-                            evt.method = method;
-                            document.dispatchEvent(evt);
-                        }
+                        startIteration();
+                        var evt = document.createEvent("Event");
+                        evt.initEvent("fps",true,true); 
+                        evt.fps = fps;
+                        evt.method = method;
+                        document.dispatchEvent(evt);
                     },
                     false);
             }
-            self.maxIterations = duration?duration:null;
-            self.curIterations = 0;
             setTimeout(
                 function (evt) {
                     startIteration();
@@ -180,7 +172,7 @@ var self = window.FPSMeter = {
         } else {
             setTimeout(
                 function (evt) {
-                    self.run(rate,duration);
+                    self.run(rate);
                 },
                 10);
         }
@@ -188,7 +180,9 @@ var self = window.FPSMeter = {
     stop : function() {
         cancelAnimationFrame(frameID);
         frameID = null;
-        self.maxIterations = 1;
+        var bodyRef = document.getElementsByTagName("body").item(0);
+        bodyRef.removeChild(ref);
+        ref = null;
     }
 }
 
