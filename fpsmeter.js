@@ -88,7 +88,7 @@ var self = window.FPSMeter = {
                 } else {
                     ref.style.left = "0px";
                 }
-                if (window.mozPaintCount) {
+                if (window.mozPaintCount != undefined) {
                     // Remember how many paints we had
                     frameID = window.mozPaintCount;
                 } else {
@@ -124,7 +124,7 @@ var self = window.FPSMeter = {
                     function (evt) {
                         self.curIterations++;
                         var fps = 0;
-                        if (window.mozPaintCount) {
+                        if (window.mozPaintCount != undefined) {
                             // We just count the number of paints that
                             // occured during the last second
                             fps = window.mozPaintCount - frameID;
