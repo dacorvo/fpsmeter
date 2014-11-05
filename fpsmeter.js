@@ -49,8 +49,8 @@ if(!transitionPropertyName){
 // Use this to remmeber what method we use to calculate fps
 var method = 'raf';
 
-var requestAnimationFrame = null;
-var cancelAnimationFrame = null;
+var requestAnimationFrame = window.requestAnimationFrame;
+var cancelAnimationFrame = window.cancelAnimationFrame;
 // requestAnimationFrame polyfill by Erik Möller
 // http://my.opera.com/emoller/blog/2011/12/20/requestanimationframe-for-smart-er-animating
 (function() {
